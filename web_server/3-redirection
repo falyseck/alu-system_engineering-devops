@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-#moving permanently
-
+# Update package list and install Nginx
 sudo apt-get update
 sudo apt-get install -y nginx
 
-echo "Holberton School" | sudo tee /var/www/html/index.html
+# Create a backup of the default Nginx configuration
+sudo cp /etc/nginx/sites-available/default /etc/nginx/sites-available/default.bak
 
-string_for_replacement="server_name _;\n\t\trewrite ^\/redirect_me https:\/\/github.com\/Sadickachuli permanent;"
+# Add the redirection rule to the Nginx configuration
+sudo sed -i '/server_name _;/a \\n\tlocation /redirect_me {\n\t\treturn 301 https://www.youtube.com/watch?v=QH2-TGUlwu4;\n\t}' /etc/nginx/sites-available/default
 
-sudo sed -i "s/server_name _;/$string_for_replacement/" /etc/nginx/sites-enabled/default
-
+# Restart Nginx to apply changes
 sudo service nginx restart
