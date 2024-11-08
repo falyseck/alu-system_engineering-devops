@@ -1,47 +1,15 @@
 #!/usr/bin/env bash
-# Filename: 0-custom_http_response_header
-# This script configures Nginx to include a custom HTTP response header `X-Served-By`
-# The header's value is set to the server's hostname.
+# Configure Nginx so that its HTTP response contains a custom header
+# The name of the custom HTTP header must be `X-Served-By`
+# The value of the custom HTTP header must be the `hostname` of the server Nginx is running on
 
-# Ensure the script is run as root
-if [ "$EUID" -ne 0 ]; then
-  echo "Please run as root"
-  exit 1
-fi
+sudo apt-get update
+sudo apt-get -y install nginx
+sudo ufw enable
+sudo ufw allow 'Nginx HTTP'
+sudo ufw allow 'OpenSSH'
+echo 'Hello World!' |sudo tee /var/www/html/index.html
 
-# Install Nginx if not already installed
-if ! command -v nginx &> /dev/null; then
-  echo "Nginx not found, installing..."
-  apt-get update
-  apt-get install -y nginx
-fi
-
-# Retrieve the hostname of the server
-HOSTNAME=$(hostname)
-
-# Configure Nginx to add the custom header in the main configuration file
-# This header will add `X-Served-By` with the value of the server's hostname
-NGINX_CONF="/etc/nginx/nginx.conf"
-
-# Backup the current nginx.conf file
-if [ ! -f "$NGINX_CONF.bak" ]; then
-  cp "$NGINX_CONF" "$NGINX_CONF.bak"
-fi
-
-# Insert custom header configuration
-# Note: This block will only be added once, even if the script is run multiple times
-if ! grep -q "add_header X-Served-By" "$NGINX_CONF"; then
-  sed -i "/http {/a \    add_header X-Served-By \"$HOSTNAME\";" "$NGINX_CONF"
-fi
-
-# Test Nginx configuration for syntax errors
-nginx -t
-
-# Reload Nginx to apply changes
-if [ $? -eq 0 ]; then
-  systemctl reload nginx
-  echo "Nginx configured successfully with custom header X-Served-By: $HOSTNAME"
-else
-  echo "Nginx configuration test failed. Please check the nginx configuration."
-fi
-
+custom_header="server_name _;\n\tadd_header X-Served-By \$HOSTNAME;"
+sudo sed -i "s|server_name _;|$custom_header|" /etc/nginx/sites-enabled/default
+sudo service nginx restart
