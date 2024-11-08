@@ -1,22 +1,47 @@
 #!/usr/bin/env bash
-# Update package list and install Nginx
-sudo apt update
-sudo apt install -y nginx
+# Filename: 0-custom_http_response_header
+# This script configures Nginx to include a custom HTTP response header `X-Served-By`
+# The header's value is set to the server's hostname.
 
-# Get the hostname of the server
+# Ensure the script is run as root
+if [ "$EUID" -ne 0 ]; then
+  echo "Please run as root"
+  exit 1
+fi
+
+# Install Nginx if not already installed
+if ! command -v nginx &> /dev/null; then
+  echo "Nginx not found, installing..."
+  apt-get update
+  apt-get install -y nginx
+fi
+
+# Retrieve the hostname of the server
 HOSTNAME=$(hostname)
 
-# Configure Nginx to add the custom header
-NGINX_CONFIG="/etc/nginx/sites-available/default"
+# Configure Nginx to add the custom header in the main configuration file
+# This header will add `X-Served-By` with the value of the server's hostname
+NGINX_CONF="/etc/nginx/nginx.conf"
 
-# Backup the original Nginx configuration
-sudo cp $NGINX_CONFIG $NGINX_CONFIG.bak
+# Backup the current nginx.conf file
+if [ ! -f "$NGINX_CONF.bak" ]; then
+  cp "$NGINX_CONF" "$NGINX_CONF.bak"
+fi
 
-# Add the custom header to the Nginx configuration
-sudo sed -i "/server_name/a \    add_header X-Served-By \"$HOSTNAME\";" $NGINX_CONFIG
+# Insert custom header configuration
+# Note: This block will only be added once, even if the script is run multiple times
+if ! grep -q "add_header X-Served-By" "$NGINX_CONF"; then
+  sed -i "/http {/a \    add_header X-Served-By \"$HOSTNAME\";" "$NGINX_CONF"
+fi
 
-# Test the Nginx configuration
-sudo nginx -t
+# Test Nginx configuration for syntax errors
+nginx -t
 
-# Restart Nginx to apply changes
-sudo systemctl restart nginx
+# Reload Nginx to apply changes
+if [ $? -eq 0 ]; then
+  systemctl reload nginx
+  echo "Nginx configured successfully with custom header X-Served-By: $HOSTNAME"
+else
+  echo "Nginx configuration test failed. Please check the nginx configuration."
+fi
+
