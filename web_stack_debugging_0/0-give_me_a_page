@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# This script fixes the container by installing and configuring Apache, and setting up a Hello Holberton page.
+
+apt-get update
+apt-get install -y apache2
+service apache2 start
+echo "Hello Holberton" > /var/www/html/index.html
+
