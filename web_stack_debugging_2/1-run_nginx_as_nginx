@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# runs nginx as nginx user
+
+# Update nginx.conf to use the nginx user
+sed -i "s/#user www-data/user nginx/" /etc/nginx/nginx.conf
+
+# Set the correct permissions and ownership for nginx.conf
+sudo chown -R nginx:nginx /etc/nginx
+sudo chown -R nginx:nginx /var/log/nginx
+
+chmod 700 /etc/nginx/nginx.conf
+chown nginx:nginx /etc/nginx/nginx.conf
+
+# Change the default port to 8080 in the default site configuration
+sed -i "s/80 default_server/8080 default_server/" /etc/nginx/sites-available/default
+
+# Stop Apache2 if running
+pkill apache2
+
+#start Nginx service with the nginx user
+sudo -u nginx service nginx start
